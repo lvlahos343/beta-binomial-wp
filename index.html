@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Win Distribution</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+  </head>
+  <body>
+    <h1>Hello Amazin' Avenue!</h1>
+    <p>This is a simple tool to illustrate how to judge the team against how we thought they'd perfrom initially.</p>
+
+
+    <!-- User Input Form -->
+	<form id="inputForm" action="/action_page.php">
+		How many games did you expect the Mets to win this season?<br>
+		<input type="number" name="expWins" value=81 max=162 min=0><br>
+		How many games have the Mets won?<br>
+		<input type="number" name="numWins" value=7 max=162 min=0><br>
+		How many games have the Mets played?<br>
+		<input type="number" name="numGames" value=14 max=162 min=0><br>
+	</form> 
+
+	<!-- Plot Button -->
+	<p>Click "plot" to re-render the graph with your specified parameters:</p>
+	<button onclick="plotBetaVals()">Plot</button>
+
+	<!-- Plot div -->
+	<div id = 'plotDiv'></div>
+
+	<!-- Print div -->
+	<div id = 'printW'></div><br>
+	<div id = 'printExp'></div><br>
+	<div id = 'printPace'></div><br>
+
+
+	<!-- JavaScript -->
+	<script>
+		function plotBetaVals() {
+			// get user input 
+			var userInput = document.getElementById("inputForm");
+			var expWins = parseInt(userInput.elements[0].value);
+			var numWins = parseInt(userInput.elements[1].value);
+			var numGames = parseInt(userInput.elements[2].value);
+			
+			// set up beta params
+			var expWinPer = expWins / 162;
+			var curExpWins = Math.round(expWinPer * numGames);
+			var alpha_param = curExpWins + numWins;
+			var beta_param = numGames - curExpWins + numGames - numWins;
+
+			// generate values
+			var winPer = [];
+			var density = [];
+			var numPoints = 1000;
+			var maxW = 0;
+			var maxP = 0;
+			for (var i = 0; i <= numPoints; i ++) {
+				winPer[i] = i / numPoints;
+				density[i] = jStat.beta.pdf((i / numPoints), alpha_param, beta_param);
+				if (density[i] >= maxP) {
+					maxW = winPer[i];
+					maxP = density[i];
+				}
+			}
+
+			// plot
+			var trace1 = {
+				x: winPer,
+				y: density,
+				mode: 'lines'
+			};
+			var layout = {
+				title:'Estimated True Winning Percentage'
+			};
+			var data = [trace1];
+			Plotly.newPlot('plotDiv', data, layout);
+
+			// print
+			var divTex = "Most Likely W%: " + Math.round(1000*maxW) / 10 + "%\n";
+			document.getElementById('printW').innerHTML = divTex;
+			divTex = "Expected Current Wins: " + Math.round(numGames*maxW*10) / 10 + "\n";
+			document.getElementById('printExp').innerHTML = divTex;
+			divTex = "Full Seasons Wins: " + Math.round(162*maxW*10) / 10;
+			document.getElementById('printPace').innerHTML = divTex;
+
+		}
+	</script>
+
+
+
+  </body>
+</html>
