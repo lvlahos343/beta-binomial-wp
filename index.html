@@ -92,7 +92,17 @@
 				name: 'On-Field'
 			};
 			var layout = {
-				title:'Estimated True Winning Percentage'
+				title:'Estimated True-Talent Winning Percentage',
+				xaxis: {
+					title: {
+						text: 'Winning Percentage'
+					}
+				},
+				yaxis: {
+					title: {
+						text: 'Probability Density'
+					}
+				}
 			};
 			var data = [ pos_trace, prior_trace, est_trace ];
 			Plotly.newPlot('plotDiv', data, layout);
