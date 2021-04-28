@@ -15,6 +15,8 @@
 	<form id="inputForm" action="/action_page.php">
 		How many games did you expect the Mets to win this season?<br>
 		<input type="number" name="expWins" value=92 max=162 min=0><br>
+		In terms of on-field results, how much weight should preseason win estimates have?<br>
+		<input type="number" name="priorWeight" value=81 max=162 min=0><br>
 		How many games have the Mets won?<br>
 		<input type="number" name="numWins" value=10 max=162 min=0><br>
 		How many games have the Mets played?<br>
@@ -39,40 +41,60 @@
 			// get user input 
 			var userInput = document.getElementById("inputForm");
 			var expWins = parseInt(userInput.elements[0].value);
-			var numWins = parseInt(userInput.elements[1].value);
-			var numGames = parseInt(userInput.elements[2].value);
+			var priorWeight = parseInt(userInput.elements[1].value);
+			var numWins = parseInt(userInput.elements[2].value);
+			var numGames = parseInt(userInput.elements[3].value);
 			
 			// set up beta params
-			var expWinPer = expWins / 162;
-			var curExpWins = Math.round(expWinPer * numGames);
+			var curExpWins = Math.round(expWins * priorWeight / 162);
+			var curExpLosses = Math.round((162 - expWins) * priorWeight / 162);
 			var alpha_param = curExpWins + numWins;
-			var beta_param = numGames - curExpWins + numGames - numWins;
+			var beta_param = curExpLosses + numGames - numWins;
 
 			// generate values
 			var winPer = [];
-			var density = [];
+			var pos_dense = [];
+			var prior_dense = [];
+			var est_dense = [];
 			var numPoints = 1000;
 			var maxW = 0;
 			var maxP = 0;
 			for (var i = 0; i <= numPoints; i ++) {
 				winPer[i] = i / numPoints;
-				density[i] = jStat.beta.pdf((i / numPoints), alpha_param, beta_param);
-				if (density[i] >= maxP) {
+				// prior and posterior density
+				pos_dense[i] = jStat.beta.pdf((i / numPoints), numWins, numGames - numWins);
+				prior_dense[i] = jStat.beta.pdf((i / numPoints), curExpWins, curExpLosses);
+				// estimate density
+				est_dense[i] = jStat.beta.pdf((i / numPoints), alpha_param, beta_param);
+				if (est_dense[i] >= maxP) {
 					maxW = winPer[i];
-					maxP = density[i];
+					maxP = est_dense[i];
 				}
 			}
 
 			// plot
-			var trace1 = {
+			var est_trace = {
 				x: winPer,
-				y: density,
-				mode: 'lines'
+				y: est_dense,
+				mode: 'lines',
+				name: 'Win Estimate'
+			};
+			var prior_trace = {
+				x: winPer,
+				y: prior_dense,
+				mode: 'lines',
+				name: 'Prior'
+			};
+			var pos_trace = {
+				x: winPer,
+				y: pos_dense,
+				mode: 'lines',
+				name: 'On-Field'
 			};
 			var layout = {
 				title:'Estimated True Winning Percentage'
 			};
-			var data = [trace1];
+			var data = [ pos_trace, prior_trace, est_trace ];
 			Plotly.newPlot('plotDiv', data, layout);
 
 			// print
